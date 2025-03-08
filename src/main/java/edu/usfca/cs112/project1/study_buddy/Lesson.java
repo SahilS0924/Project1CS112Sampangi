@@ -1,5 +1,7 @@
 package edu.usfca.cs112.project1.study_buddy;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,6 +23,7 @@ public class Lesson implements Serializable{
 	private int skippedQuestions;
 	private transient Scanner scanner;
 	private String Description;
+	public double score;
 //… etc. lots more instance variables here …
 	public Lesson(String topic){
 			this.myModel = new Model();
@@ -39,7 +42,7 @@ public class Lesson implements Serializable{
 		String alreadyAsked = "";
 		  for (int i = 0; i < 3; i++) {
 	          try {
-	        	  String QA = myModel.generate("Generate a multipile choice question from the information from the paragraphs you gave about " + topic + "Format it like this: \n" + "Question\n" + "A) Option1\n" + "B) Option2\n" + "C) Option3\n" + "D) Option4\n" + "Answer: (A, B , C or D). Make sure the question is not already in this string: " + alreadyAsked);
+	        	  String QA = myModel.generate("Generate a multipile choice question from the information from the paragraphs you gave about " + topic + "Format it like this: \n" + "Question\n" + "A) Option1\n" + "B) Option2\n" + "C) Option3\n" + "D) Option4\n" + "Answer: either 'A','B','C','D'. Make sure the question is not already in this string: " + alreadyAsked);
 	        	  alreadyAsked += QA;
 	        	  String[] parts = QA.split("Answer:");
 	        	  String question = parts[0];
@@ -48,7 +51,7 @@ public class Lesson implements Serializable{
 	            answerKey.put(question, correctAnswer);
 	            }
 	          catch (Exception e){
-	        	  System.out.println("Error Generating");
+	        	  System.out.println("Error Generating" +e.getMessage());
 	          }
 	            }
 	}
@@ -56,13 +59,13 @@ public class Lesson implements Serializable{
 	public void doLesson(){
 			// administer a single lesson on this.topic
 			// to your user through a Scanner interaction
-			System.out.println("The first lesson is " + topic);
+			System.out.println("The next topic is " + topic);
 			System.out.println("Description: " + Description);
-	        generateQuestions();
 	        for(String question : questions) {
 	        	askQuestion(question);
 	        }
 	        ratePerformance();
+	        
 	    }
 	private void askQuestion(String question) {
 		System.out.println("\n" + question);
@@ -86,23 +89,27 @@ public class Lesson implements Serializable{
 	}
 	private void ratePerformance() {
 		int totalQuestions = correctAnswers + incorrectAnswers + skippedQuestions;
-        double score = ((double) correctAnswers / totalQuestions) * 100;
+         score = ((double) correctAnswers / totalQuestions) * 100;
         System.out.println("\nLesson completed.");
         System.out.println("Correct Answers: " + correctAnswers);
         System.out.println("Incorrect Answers: " + incorrectAnswers);
         System.out.println("Skipped Questions: " + skippedQuestions);
         System.out.println("Your Score: " + score + "%");
 
-        if (score >= 80) {
+        if (score >= 67) {
             System.out.println("Good job!");
-        } else if (score >= 50) {
+        } else if (score >= 34) {
             System.out.println("Not bad");
         } else {
             System.out.println("Bad");
         }
 		
 	}
-	
+	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+	    ois.defaultReadObject();
+	    reset();
+	}
+
 	//…plus plenty of other helper methods …
 	public void reset(){
 		myModel = new Model();

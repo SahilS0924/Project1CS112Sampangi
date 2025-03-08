@@ -4,11 +4,14 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
+
 import org.json.JSONObject;
 import org.json.JSONArray;
 
 public class Model {
-    private static final String key = "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"; 
+	private static final Map<String,String> env = System.getenv();
+    private static final String key = env.get("OPENAI_API_KEY"); 
 
     public String generate(String question) {
         JSONObject payload = new JSONObject();

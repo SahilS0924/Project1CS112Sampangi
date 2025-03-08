@@ -1,10 +1,12 @@
 package edu.usfca.cs112.project1.study_buddy;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -13,29 +15,32 @@ public class Course implements Serializable{
 	private static final long serialVersionUID = 1L;
 	// Contains the Lessons completed so far in the order they were taken.
 	// Might be empty, for example if the user has never done a Lesson before.
-	private ArrayList<Lesson> lessons;
+	public ArrayList<Lesson> lessons;
 	// Always contains the full list of topics, loaded from file. This list defines the proper sequence of the Course.
 	private ArrayList<String> topics;
+	private ArrayList<String> completedTopics;
 	// Construct a Course by loading (deserializing) already finished Lessons into the lessons field
 	// and reading all topics from file into the topics field
-	public Course(String topicsFile, String lessonsFile) throws FileNotFoundException {
+	public Course(String topicsFile, String completedTopicsFile) throws FileNotFoundException {
 	lessons = new ArrayList<>();
 	topics = new ArrayList<>();
-	loadLessonsFromFile(lessonsFile); // a Course instance method you would implement
+	completedTopics = new ArrayList<>();
+	loadLessonsFromFile(completedTopicsFile); // a Course instance method you would implement
 	loadTopicsFromFile(topicsFile); // a Course instance method you would implement
 
 	}
-	private void loadLessonsFromFile(String lessonsFile) throws FileNotFoundException {
-	    File file = new File(lessonsFile);
-	    Scanner scanner = new Scanner(file);
-	    while (scanner.hasNextLine()) {
-	        String topic = scanner.nextLine().trim();
-	        lessons.add(new Lesson(topic));
-	    }
-	    scanner.close();
-	}
-
-
+	@SuppressWarnings("unchecked")
+	private void loadLessonsFromFile(String completedTopicsFile) {
+		
+	        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(completedTopicsFile))) {
+	            //Object obj = ois.readObject();
+	         completedTopics = (ArrayList<String>) ois.readObject();
+	            System.out.println("Completed lessons successfully loaded.");
+	        } catch (IOException | ClassNotFoundException e) {
+	            System.out.println("Could not load completed lessons: " + e.getMessage());
+	        }
+	    } 
+	
 	private void loadTopicsFromFile(String topicsFile) throws FileNotFoundException {
 		File file = new File(topicsFile);
 		Scanner scanner = new Scanner(file);
@@ -45,30 +50,41 @@ public class Course implements Serializable{
 			scanner.close();
 	}
 
+//	public Lesson getNextLesson() {
+//	    for (String topic : topics) {
+//	        if (!getCompletedLessonTopics().contains(topic)) {
+//	            Lesson newLesson = new Lesson(topic);
+//	            topics.add(topic);
+//	            saveToFile("src/main/resources/fullCourse.txt");
+//	            return newLesson;
+//	        }
+//	    }
+//	    System.out.println("You have completed all lessons.");
+//	    return null;
+//	}
 	public Lesson getNextLesson() {
-        if (lessons.size() < topics.size()) {
-        	String nextTopic = topics.get(lessons.size());
-        	Lesson newLesson = new Lesson(nextTopic);
+		for (String topic : topics) {
+			Lesson newLesson = new Lesson(topic);
+        if (!completedTopics.contains(topic)) {
+        //	String nextTopic = topics.get(lessons.size());
+        	//Lesson newLesson = new Lesson(topic);
+        	completedTopics.add(topic);
         	lessons.add(newLesson);
-        	saveToFile("fullCourse.txt");
+        //	saveToFile("src/main/resources/fullCourse.txt");
         	return newLesson;
         }
-        else {
-                System.out.println("You Completed all the lessons");
-                return null;            
-        }
-
+}
+		return null;
 	}
-	public String saveToFile(String lessonsFile) {
-	    try (PrintWriter writer = new PrintWriter(new FileWriter(lessonsFile))) {
-	        for (Lesson lesson : lessons) {
-	            writer.println(lesson.getTopic());
-	        }
+	public String saveToFile(String completedTopicsFile) {
+	    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(completedTopicsFile))) {
+	        oos.writeObject(completedTopics); 
 	        return "Progress saved";
 	    } catch (IOException e) {
 	        return e.getMessage();
 	    }
 	}
+
 
     public Lesson selectLesson(int index) {
         if (index >= 0 && index < topics.size()) {
@@ -79,7 +95,8 @@ public class Course implements Serializable{
             }
             Lesson newLesson = new Lesson(topics.get(index));
             lessons.add(newLesson);
-            saveToFile("fullCourse.txt");
+	        completedTopics.add(newLesson.getTopic());
+          //  saveToFile("fullCourse.txt");
             return newLesson;
         } else {
             System.out.println("Enter Valid Number");
@@ -88,9 +105,6 @@ public class Course implements Serializable{
     }
     public void evaluateProgress() {
         System.out.println("Progress: " + lessons.size() + "/" + topics.size());
-        for (Lesson lesson : lessons) {
-            System.out.println(lesson.getTopic());
-        }
     }
     public int getCompletedLessonCount() {
         return lessons.size();
@@ -113,6 +127,44 @@ public class Course implements Serializable{
 	public ArrayList<Lesson> getLessons() {
 		return lessons;
 	}
+	public void getAvgLesson() {
+		Double avgScore = null;
+		int totalScore = 0;
+
+		
+		 
+		for (Lesson lesson : lessons) {
+			totalScore += lesson.score;
+		}
+		 avgScore = (double) (totalScore/lessons.size());
+		System.out.println("Your Average Score was: " + avgScore);
+	
+		}
+	public void getWorstLesson() {
+		String worstLesson = "";
+		double minScore = 0;
+	    for (Lesson lesson : lessons) {
+	        if (lesson.score <= minScore) {
+	            minScore = lesson.score;
+	            worstLesson = lesson.getTopic();
+	        }
+	    }
+	    System.out.println("Your Worst lesson was: " + worstLesson + " With a Score of " + minScore);
+	}
+
+	public void getBestLesson() {
+		String bestLesson = "";
+		double maxScore = 0;
+	    for (Lesson lesson : lessons) {
+	        if (lesson.score >= maxScore) {
+	            maxScore = lesson.score;
+	            bestLesson = lesson.getTopic();
+	        }
+	    }
+	    System.out.println("Your Best lesson was: " + bestLesson + " With a Score of: " + maxScore);
+	}
+
+		
+	}
 
 
-}
